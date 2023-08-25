@@ -1,5 +1,10 @@
 use crossbeam::atomic::AtomicCell;
+use std::any::Any;
+use std::collections::HashMap;
+use std::io::stdin;
+use std::net::IpAddr;
 use std::sync::{Arc, Mutex};
+use std::thread::JoinHandle;
 use std::time::Duration;
 use std::{env, fs::File, io::Read, sync::mpsc::channel, thread};
 use zeroconf::prelude::*;
@@ -18,52 +23,82 @@ fn get_file(buffer: &mut Vec<u8>) {
     file.read_to_end(buffer).unwrap();
 }
 
+type Services = HashMap<String, Service>;
+
 #[derive(Clone, Debug)]
 struct Service {
     address: String,
     port: u16,
+    name: String,
 }
 
-fn start_search(services: Arc<Mutex<Vec<Service>>>) {
+fn start_search(services: Arc<Mutex<Services>>, stop: Arc<Mutex<bool>>) -> JoinHandle<()> {
     thread::spawn(move || {
-        let mut browser = MdnsBrowser::new(ServiceType::new("nonas", "tcp").unwrap());
+        let mut browser = MdnsBrowser::new(ServiceType::new("localdrop", "tcp").unwrap());
 
         browser.set_service_discovered_callback(Box::new(move |result, _context| {
             let result = result.unwrap();
+            let name = result.txt().clone().unwrap().get("name").unwrap();
             //println!("Service discovered: {:?}", result);
+            let addr = result.address().clone();
             let s = Service {
-                address: result.address().clone(),
+                address: addr.clone(),
                 port: result.port().clone(),
+                name,
             };
-            services.lock().unwrap().push(s);
+            services.lock().unwrap().insert(addr, s);
             //sender.send(s).unwrap();
         }));
 
         let event_loop = browser.browse_services().unwrap();
 
         loop {
-            println!("Checking");
+            if stop.lock().unwrap().clone() {
+                return;
+            }
+            //println!("Checking");
             event_loop.poll(Duration::from_secs(1)).unwrap();
         }
-    });
+    })
 }
 
 fn main() {
-    let s: Vec<Service> = Vec::new();
+    let s: HashMap<String, Service> = HashMap::new();
     let services = Arc::new(Mutex::new(s));
-    start_search(services.clone());
+    let stop = Arc::new(Mutex::new(false));
+    start_search(services.clone(), stop.clone());
 
     // provide the filename to send when running for simplicity
     let mut buffer: Vec<u8> = Vec::new();
     get_file(&mut buffer);
 
     // search for devices running it
-    // select the device to send to
-    // wait for ok
-    // send data
 
-    loop {
-        dbg!(services.lock().unwrap().clone());
-        thread::sleep(Duration::from_secs(3));
+    println!("Finding devices...");
+    thread::sleep(Duration::from_secs(3));
+    *(stop.lock().unwrap()) = true;
+    //search_thread.join().unwrap();
+    println!("Please select a device to send to");
+
+    let s = services.lock().unwrap().clone();
+    for (addr, service) in s.iter() {
+        let addr: IpAddr = addr.parse().unwrap();
+        if addr.is_ipv6() {
+            continue;
+        }
+        println!("{} ({})", service.name, addr);
     }
+
+    // select the device to send to
+    let mut addr = String::new();
+    stdin().read_line(&mut addr).expect("aaa");
+
+    dbg!(addr.trim_end());
+    //loop {
+    //dbg!(services.lock().unwrap().clone());
+    //}
+
+    // check if can do it
+    // wait for response
+    // send data
 }
