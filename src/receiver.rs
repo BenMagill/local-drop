@@ -1,6 +1,6 @@
 use std::any::Any;
 use std::io::{Read, Write};
-use std::net::TcpListener;
+use std::net::{IpAddr, TcpListener};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -15,7 +15,7 @@ pub struct Context {
 fn main() {
     // Create a service
     let port = "12727";
-    let tcp_listener = TcpListener::bind(String::from("127.0.0.1:") + port).unwrap();
+    let tcp_listener = TcpListener::bind(String::from("0.0.0.0:") + port).unwrap();
 
     thread::spawn(|| {
         let mut service = MdnsService::new(
@@ -39,7 +39,8 @@ fn main() {
     });
     for stream in tcp_listener.incoming() {
         let mut stream = stream.unwrap();
-        let mut buf = vec![];
+        println!("Got connection");
+        let mut buf = [0; 1028];
         stream.read(&mut buf).unwrap();
         dbg!(buf);
         stream.write("ok".as_bytes()).unwrap();

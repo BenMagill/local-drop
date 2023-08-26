@@ -99,12 +99,13 @@ fn main() {
 
     let listener = addr + ":" + service.port.to_string().as_str();
     dbg!(listener.clone());
+
     let mut stream = TcpStream::connect(listener).unwrap();
     stream.write("hello".as_bytes()).unwrap();
 
-    let mut buf = vec![];
-    stream.read(&mut buf).unwrap();
-    dbg!(buf);
+    let mut buf = [0; 1000];
+    println!("{}", stream.read(&mut buf).unwrap());
+    dbg!(String::from_utf8(buf.to_vec()));
 
     //loop {
     //dbg!(services.lock().unwrap().clone());
