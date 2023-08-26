@@ -1,8 +1,8 @@
 use crossbeam::atomic::AtomicCell;
 use std::any::Any;
 use std::collections::HashMap;
-use std::io::stdin;
-use std::net::IpAddr;
+use std::io::{stdin, Write};
+use std::net::{IpAddr, TcpStream};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use std::time::Duration;
@@ -94,6 +94,15 @@ fn main() {
     stdin().read_line(&mut addr).expect("aaa");
 
     dbg!(addr.trim_end());
+    let service = s.get(&addr).unwrap();
+
+    let mut stream = TcpStream::connect(addr + ":" + service.port.to_string().as_str()).unwrap();
+    stream.write("hello".as_bytes()).unwrap();
+
+    let mut buf = vec![];
+    stream.read(&mut buf).unwrap();
+    dbg!(buf);
+
     //loop {
     //dbg!(services.lock().unwrap().clone());
     //}

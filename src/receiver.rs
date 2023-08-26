@@ -1,5 +1,8 @@
 use std::any::Any;
+use std::io::{Read, Write};
+use std::net::TcpListener;
 use std::sync::{Arc, Mutex};
+use std::thread;
 use std::time::Duration;
 use zeroconf::prelude::*;
 use zeroconf::{MdnsService, ServiceRegistration, ServiceType, TxtRecord};
@@ -11,21 +14,35 @@ pub struct Context {
 
 fn main() {
     // Create a service
-    let mut service = MdnsService::new(ServiceType::new("localdrop", "tcp").unwrap(), 1111);
+    let port = "1111";
+    let tcp_listener = TcpListener::bind(String::from("127.0.0.1:") + port).unwrap();
 
-    let mut txt_record = TxtRecord::new();
-    let context: Arc<Mutex<Context>> = Arc::default();
+    thread::spawn(|| {
+        let mut service = MdnsService::new(
+            ServiceType::new("localdrop", "tcp").unwrap(),
+            port.parse().unwrap(),
+        );
 
-    txt_record.insert("name", "raspberrrrrrry").unwrap();
+        let mut txt_record = TxtRecord::new();
+        let context: Arc<Mutex<Context>> = Arc::default();
 
-    service.set_registered_callback(Box::new(on_service_reg));
-    service.set_context(Box::new(context));
-    service.set_txt_record(txt_record);
+        txt_record.insert("name", "raspberrrrrrry").unwrap();
 
-    let event_loop = service.register().unwrap();
+        service.set_registered_callback(Box::new(on_service_reg));
+        service.set_context(Box::new(context));
+        service.set_txt_record(txt_record);
 
-    loop {
-        event_loop.poll(Duration::from_secs(5)).unwrap();
+        let event_loop = service.register().unwrap();
+        loop {
+            event_loop.poll(Duration::from_secs(5)).unwrap();
+        }
+    });
+    for stream in tcp_listener.incoming() {
+        let mut stream = stream.unwrap();
+        let mut buf = vec![];
+        stream.read(&mut buf).unwrap();
+        dbg!(buf);
+        stream.write("ok".as_bytes()).unwrap();
     }
 }
 
