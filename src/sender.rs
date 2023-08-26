@@ -92,11 +92,14 @@ fn main() {
     // select the device to send to
     let mut addr = String::new();
     stdin().read_line(&mut addr).expect("aaa");
-
+    addr = addr.trim_end().to_string();
+    dbg!(s.clone());
     dbg!(addr.trim_end());
     let service = s.get(&addr).unwrap();
 
-    let mut stream = TcpStream::connect(addr + ":" + service.port.to_string().as_str()).unwrap();
+    let listener = addr + ":" + service.port.to_string().as_str();
+    dbg!(listener.clone());
+    let mut stream = TcpStream::connect(listener).unwrap();
     stream.write("hello".as_bytes()).unwrap();
 
     let mut buf = vec![];
