@@ -1,6 +1,6 @@
 use local_drop::{read_stream, Message, MessageType};
 use std::any::Any;
-use std::io::{Read, Write};
+use std::io::{stdin, Read, Write};
 use std::net::{IpAddr, TcpListener};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -42,18 +42,29 @@ fn main() {
         let mut stream = stream.unwrap();
         println!("Got connection");
         let buf = read_stream(&mut stream);
-        dbg!(&buf);
 
         // Expect data to be a Ask message
         match Message::parse(buf) {
             Ok(Message::Ask(info)) => {
-                //
-                dbg!(info);
+                println!(
+                    "
+                    Someone would like to send a file\n
+                    File name: {}\n
+                    Size: {}\n
+                    Accept? (enter yes)
+                    ",
+                    info.file_name, info.file_size
+                );
+
+                let mut confirm = String::new();
+                stdin().read_line(&mut confirm).unwrap();
+                confirm = confirm.trim_end().to_uppercase().to_string();
+
+                if String::from("YES") == confirm {
+                    println!("accepted,")
+                }
             }
-            Err(_) => {
-                println!("Malformed message")
-            }
-            _ => println!("Error"),
+            _ => println!("Error, expected Ask msg"),
         };
 
         stream.write("ok".as_bytes()).unwrap();

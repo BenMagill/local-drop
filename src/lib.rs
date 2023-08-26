@@ -9,8 +9,8 @@ pub enum MessageType {
 
 #[derive(Debug)]
 pub struct AskInfo {
-    file_size: u32,
-    file_name: String,
+    pub file_size: u32,
+    pub file_name: String,
 }
 
 pub fn parse_ask(message: Vec<u8>) -> AskInfo {
@@ -58,17 +58,16 @@ impl Message {
      * bytes 6 is for the length of the file_name (up to 254 chars)
      */
     pub fn build_ask(file_name: &str, file_size: u32) -> Vec<u8> {
-        // TODO: currently will send file_name in a fixed number of bytes
-        // should change to allow for variable length information to be sent
         let mut bytes = vec![0; 6];
         bytes[0] = MessageType::Ask as u8;
+
         let fs_bytes = file_size.to_be_bytes();
-        dbg!(file_size);
         bytes[1] = fs_bytes[0];
         bytes[2] = fs_bytes[1];
         bytes[3] = fs_bytes[2];
         bytes[4] = fs_bytes[3];
 
+        // Only use the first 255 bytes for the file name
         let mut fn_bytes = file_name.as_bytes();
         if fn_bytes.len() > 255 {
             fn_bytes = &fn_bytes[0..255];
@@ -76,7 +75,6 @@ impl Message {
         bytes[5] = fn_bytes.len() as u8;
 
         bytes.extend_from_slice(fn_bytes);
-        dbg!(&bytes);
 
         bytes
     }
