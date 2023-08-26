@@ -23,7 +23,7 @@ pub fn parse_ask(message: Vec<u8>) -> AskInfo {
 
     AskInfo {
         file_size: u32::from_be_bytes(b[1..5].try_into().unwrap()),
-        file_name: String::from_utf8(b[7..7 + s_length].try_into().unwrap()).unwrap(),
+        file_name: String::from_utf8(b[6..6 + s_length].try_into().unwrap()).unwrap(),
     }
 }
 
