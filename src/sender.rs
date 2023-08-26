@@ -103,7 +103,7 @@ fn main() {
     let mut stream = TcpStream::connect(listener).unwrap();
 
     let ask_msg = Message::build_ask(file_name.to_str().unwrap(), file_size as u32);
-    dbg!(&ask_msg[0..20]);
+    //dbg!(&ask_msg[0..20]);
     stream.write(&ask_msg).unwrap();
 
     let buf = read_stream(&mut stream);

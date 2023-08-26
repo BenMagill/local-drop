@@ -1,4 +1,4 @@
-use local_drop::read_stream;
+use local_drop::{read_stream, Message, MessageType};
 use std::any::Any;
 use std::io::{Read, Write};
 use std::net::{IpAddr, TcpListener};
@@ -42,10 +42,20 @@ fn main() {
         let mut stream = stream.unwrap();
         println!("Got connection");
         let buf = read_stream(&mut stream);
-        dbg!(buf);
-        //let mut buf = [0; 1028];
-        //stream.read(&mut buf).unwrap();
-        //dbg!(buf);
+        dbg!(&buf);
+
+        // Expect data to be a Ask message
+        match Message::parse(buf) {
+            Ok(Message::Ask(info)) => {
+                //
+                dbg!(info);
+            }
+            Err(_) => {
+                println!("Malformed message")
+            }
+            _ => println!("Error"),
+        };
+
         stream.write("ok".as_bytes()).unwrap();
     }
 }
