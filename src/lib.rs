@@ -19,8 +19,8 @@ pub fn parse_ask(message: Vec<u8>) -> AskInfo {
     // ... = file name
 
     let b = message.as_slice();
-    let s_length = usize::from(*message.get(6).unwrap());
-    dbg!(s_length);
+    let s_length = usize::from(*message.get(5).unwrap());
+
     AskInfo {
         file_size: u32::from_be_bytes(b[1..5].try_into().unwrap()),
         file_name: String::from_utf8(b[7..7 + s_length].try_into().unwrap()).unwrap(),
