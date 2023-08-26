@@ -1,3 +1,4 @@
+use local_drop::read_stream;
 use std::any::Any;
 use std::io::{Read, Write};
 use std::net::{IpAddr, TcpListener};
@@ -40,9 +41,11 @@ fn main() {
     for stream in tcp_listener.incoming() {
         let mut stream = stream.unwrap();
         println!("Got connection");
-        let mut buf = [0; 1028];
-        stream.read(&mut buf).unwrap();
+        let buf = read_stream(&mut stream);
         dbg!(buf);
+        //let mut buf = [0; 1028];
+        //stream.read(&mut buf).unwrap();
+        //dbg!(buf);
         stream.write("ok".as_bytes()).unwrap();
     }
 }

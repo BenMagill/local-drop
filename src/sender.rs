@@ -1,8 +1,10 @@
 use crossbeam::atomic::AtomicCell;
+use local_drop::{read_stream, Message};
 use std::any::Any;
 use std::collections::HashMap;
 use std::io::{stdin, Write};
 use std::net::{IpAddr, TcpStream};
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use std::time::Duration;
@@ -10,10 +12,7 @@ use std::{env, fs::File, io::Read, sync::mpsc::channel, thread};
 use zeroconf::prelude::*;
 use zeroconf::{MdnsBrowser, ServiceType};
 
-fn get_file(buffer: &mut Vec<u8>) {
-    let args: Vec<String> = env::args().collect();
-    let file_path = &args[1];
-
+fn get_file(buffer: &mut Vec<u8>, file_path: &String) {
     let mut file = match File::open(file_path) {
         Ok(file) => file,
         Err(_) => {
@@ -69,8 +68,12 @@ fn main() {
     start_search(services.clone(), stop.clone());
 
     // provide the filename to send when running for simplicity
+    let args: Vec<String> = env::args().collect();
+    let file_path = &args[1];
     let mut buffer: Vec<u8> = Vec::new();
-    get_file(&mut buffer);
+    get_file(&mut buffer, file_path);
+    let file_name = Path::new(file_path).file_name().unwrap();
+    let file_size = buffer.len() * 8;
 
     // search for devices running it
 
@@ -91,21 +94,23 @@ fn main() {
 
     // select the device to send to
     let mut addr = String::new();
-    stdin().read_line(&mut addr).expect("aaa");
+    stdin().read_line(&mut addr).unwrap();
     addr = addr.trim_end().to_string();
-    dbg!(s.clone());
-    dbg!(addr.trim_end());
-    let service = s.get(&addr).unwrap();
 
+    let service = s.get(&addr).unwrap();
     let listener = addr + ":" + service.port.to_string().as_str();
-    dbg!(listener.clone());
 
     let mut stream = TcpStream::connect(listener).unwrap();
-    stream.write("hello".as_bytes()).unwrap();
 
-    let mut buf = [0; 1000];
-    println!("{}", stream.read(&mut buf).unwrap());
-    dbg!(String::from_utf8(buf.to_vec()));
+    let ask_msg = Message::build_ask(file_name.to_str().unwrap(), file_size as u32);
+    dbg!(&ask_msg[0..20]);
+    stream.write(&ask_msg).unwrap();
+
+    let buf = read_stream(&mut stream);
+    //dbg!(String::from_utf8(buf));
+    //let mut buf = [0; 1028];
+    //println!("{}", stream.read(&mut buf).unwrap());
+    //dbg!(String::from_utf8(buf.to_vec()));
 
     //loop {
     //dbg!(services.lock().unwrap().clone());
