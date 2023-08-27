@@ -33,7 +33,12 @@ fn main() {
                     "Someone would like to send a file \nFile name: {} \nSize: {}",
                     info.file_name, info.file_size
                 );
-                let accept = prompt_one(Question::confirm("receive").message("Accept?").build());
+                let accept = prompt_one(
+                    Question::confirm("receive")
+                        .message("Accept?")
+                        .default(true)
+                        .build(),
+                );
 
                 if accept.unwrap().as_bool().unwrap() {
                     println!("Receiving file");
@@ -50,14 +55,15 @@ fn main() {
                             let pb = ProgressBar::new(info.file_size as u64 / 8);
 
                             while file_recv_buf.len() < info.file_size as usize / 8 {
-                                pb.set_length(file_recv_buf.len() as u64);
+                                pb.set_position(file_recv_buf.len() as u64);
                                 //println!("reading more of file");
                                 let buf = read_stream(&stream);
                                 //println!("Got {} bytes", buf.len());
+
                                 file_recv_buf.extend_from_slice(&buf);
                             }
 
-                            pb.finish_with_message("Download completed");
+                            pb.finish_and_clear();
 
                             // TODO: make this path customisable
                             let path = Path::new("./data/").join(info.file_name);
