@@ -1,4 +1,5 @@
 mod peer;
+use indicatif::ProgressBar;
 use local_drop::{read_stream, Message};
 use peer::PeerService;
 use requestty::{prompt_one, Question};
@@ -46,17 +47,23 @@ fn main() {
                     match Message::parse(vec![*buf.get(0).unwrap()]) {
                         Ok(Message::Data) => {
                             file_recv_buf.extend_from_slice(&buf.as_slice()[1..]);
+                            let pb = ProgressBar::new(info.file_size as u64 / 8);
+
                             while file_recv_buf.len() < info.file_size as usize / 8 {
-                                println!("reading more of file");
+                                pb.set_length(file_recv_buf.len() as u64);
+                                //println!("reading more of file");
                                 let buf = read_stream(&stream);
-                                println!("Got {} bytes", buf.len());
+                                //println!("Got {} bytes", buf.len());
                                 file_recv_buf.extend_from_slice(&buf);
                             }
 
-                            println!("finished reading file");
+                            pb.finish_with_message("Download completed");
 
-                            fs::write(Path::new("./data/").join(info.file_name), file_recv_buf)
-                                .unwrap();
+                            // TODO: make this path customisable
+                            let path = Path::new("./data/").join(info.file_name);
+                            fs::write(&path, file_recv_buf).unwrap();
+
+                            println!("File has been saved to {}", path.to_str().unwrap());
 
                             stream.write(&Message::build_data_received()).unwrap();
                         }
