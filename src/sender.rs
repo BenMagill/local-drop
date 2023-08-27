@@ -106,7 +106,12 @@ fn main() {
     //dbg!(&ask_msg[0..20]);
     stream.write(&ask_msg).unwrap();
 
+    println!("Requesting to send file...");
     let buf = read_stream(&mut stream);
+
+    // TODO: ensure got askOK or askDeny
+
+    println!("Request accepted");
     //dbg!(String::from_utf8(buf));
     //let mut buf = [0; 1028];
     //println!("{}", stream.read(&mut buf).unwrap());

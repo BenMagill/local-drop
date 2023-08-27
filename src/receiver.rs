@@ -61,13 +61,34 @@ fn main() {
                 confirm = confirm.trim_end().to_uppercase().to_string();
 
                 if String::from("YES") == confirm {
-                    println!("accepted,")
+                    println!("accepted,");
+
+                    stream.write(&Message::build_ask_ok()).unwrap();
+
+                    // TODO: get data from stream
+
+                    let mut file_recv_buf: Vec<u8> = vec![];
+
+                    let mut message: [u8; 1] = [0; 1];
+                    stream.read_exact(&mut message).unwrap();
+
+                    match Message::parse(message.to_vec()) {
+                        Ok(Message::Data) => {
+                            while file_recv_buf.len() < info.file_size as usize {
+                                println!("reading more of file");
+                                stream.read(&mut file_recv_buf).unwrap();
+                            }
+
+                            println!("finished reading file");
+                        }
+                        _ => panic!("unexpected"),
+                    };
+                } else {
+                    stream.write(&Message::build_ask_deny()).unwrap();
                 }
             }
             _ => println!("Error, expected Ask msg"),
         };
-
-        stream.write("ok".as_bytes()).unwrap();
     }
 }
 

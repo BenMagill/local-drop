@@ -1,10 +1,20 @@
-use std::{io::Read, net::TcpStream};
+use std::{
+    io::{Read, Write},
+    net::TcpStream,
+};
 
 pub enum MessageType {
     Ask = 0b0000_0001,
     AskOk = 0b0000_0010,
-    Data = 0b0000_0011,
-    DataEnd = 0b0000_0100,
+    AskDeny = 0b000_0011,
+    Data = 0b0000_0100,
+    //DataEnd = 0b0000_0100,
+}
+
+impl MessageType {
+    pub fn to_u8(self) -> u8 {
+        self as u8
+    }
 }
 
 #[derive(Debug)]
@@ -13,25 +23,12 @@ pub struct AskInfo {
     pub file_name: String,
 }
 
-pub fn parse_ask(message: Vec<u8>) -> AskInfo {
-    // 1-4 = file size
-    // 5 = file name len
-    // ... = file name
-
-    let b = message.as_slice();
-    let s_length = usize::from(*message.get(5).unwrap());
-
-    AskInfo {
-        file_size: u32::from_be_bytes(b[1..5].try_into().unwrap()),
-        file_name: String::from_utf8(b[6..6 + s_length].try_into().unwrap()).unwrap(),
-    }
-}
-
 pub enum Message {
     Ask(AskInfo),
     AskOk,
+    AskDeny,
     Data,
-    DataEnd,
+    //DataEnd,
 }
 
 impl Message {
@@ -42,12 +39,13 @@ impl Message {
 
         match message.get(0).unwrap() {
             1 => {
-                let ask = parse_ask(message);
+                let ask = Message::parse_ask(message);
                 Ok(Message::Ask(ask))
             }
             2 => Ok(Message::AskOk),
-            3 => Ok(Message::Data),
-            4 => Ok(Message::DataEnd),
+            3 => Ok(Message::AskDeny),
+            4 => Ok(Message::Data),
+            //4 => Ok(Message::DataEnd),
             _ => Err(()),
         }
     }
@@ -59,7 +57,7 @@ impl Message {
      */
     pub fn build_ask(file_name: &str, file_size: u32) -> Vec<u8> {
         let mut bytes = vec![0; 6];
-        bytes[0] = MessageType::Ask as u8;
+        bytes[0] = MessageType::Ask.to_u8();
 
         let fs_bytes = file_size.to_be_bytes();
         bytes[1] = fs_bytes[0];
@@ -79,11 +77,36 @@ impl Message {
         bytes
     }
 
-    pub fn build_ask_ok() {}
+    fn parse_ask(message: Vec<u8>) -> AskInfo {
+        // 1-4 = file size
+        // 5 = file name len
+        // ... = file name
 
-    pub fn build_data_packet(data: [u8; 1027]) {}
+        let b = message.as_slice();
+        let s_length = usize::from(*message.get(5).unwrap());
 
-    pub fn build_data_end() {}
+        AskInfo {
+            file_size: u32::from_be_bytes(b[1..5].try_into().unwrap()),
+            file_name: String::from_utf8(b[6..6 + s_length].try_into().unwrap()).unwrap(),
+        }
+    }
+
+    pub fn build_ask_ok() -> Vec<u8> {
+        let bytes: Vec<u8> = vec![MessageType::AskOk.to_u8()];
+
+        bytes
+    }
+
+    pub fn build_ask_deny() -> Vec<u8> {
+        let bytes: Vec<u8> = vec![MessageType::AskDeny.to_u8()];
+
+        bytes
+    }
+
+    pub fn send_data(mut stream: &TcpStream, data: &Vec<u8>) {
+        stream.write(&[MessageType::Data.to_u8()]).unwrap();
+        stream.write(data).unwrap();
+    }
 }
 
 /**
