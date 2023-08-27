@@ -30,7 +30,7 @@ fn main() {
         match Message::parse(buf) {
             Ok(Message::Ask(info)) => {
                 println!(
-                    "Someone would like to send a file \nFile name: {} \nSize: {}",
+                    "Someone would like to send a file \n\tFile name: {} \n\tSize: {}",
                     info.file_name, info.file_size
                 );
                 let accept = prompt_one(

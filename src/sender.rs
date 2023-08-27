@@ -1,5 +1,6 @@
 mod peer;
 use local_drop::{read_stream, Message};
+use requestty::Question;
 use std::io::{stdin, Write};
 use std::net::{IpAddr, TcpStream};
 use std::path::Path;
@@ -7,7 +8,7 @@ use std::time::Duration;
 use std::{env, fs::File, io::Read, thread};
 use zeroconf::prelude::*;
 
-use crate::peer::PeerService;
+use crate::peer::{Peer, PeerService};
 
 fn get_file(buffer: &mut Vec<u8>, file_path: &String) {
     let mut file = match File::open(file_path) {
@@ -35,7 +36,6 @@ fn main() {
     println!("Finding devices...");
     thread::sleep(Duration::from_secs(3));
     p.end_search();
-    println!("Please select a device to send to");
 
     let s = p.get_peers();
     for (addr, service) in s.iter() {
@@ -47,10 +47,28 @@ fn main() {
         println!("{} ({})", service.name, addr);
     }
 
+    let mut choices = Vec::new();
+    let mut service_addr = Vec::new();
+
+    for p in s.values().cloned() {
+        if p.address.parse::<IpAddr>().unwrap().is_ipv4() {
+            choices.push(format!("{} ({})", p.name, p.address));
+            service_addr.push(p.address);
+        }
+    }
+
+    let q = Question::select("peer")
+        .message("Select a device to send to")
+        .choices(choices)
+        .build();
+    let choice = requestty::prompt_one(q);
+    let index = choice.unwrap().as_list_item().unwrap().index;
+    let addr = service_addr.get(index).unwrap().clone();
+
     // select the device to send to
-    let mut addr = String::new();
-    stdin().read_line(&mut addr).unwrap();
-    addr = addr.trim_end().to_string();
+    //let mut addr = String::new();
+    //stdin().read_line(&mut addr).unwrap();
+    //addr = addr.trim_end().to_string();
 
     let service = s.get(&addr).unwrap();
     let listener = addr + ":" + service.port.to_string().as_str();
