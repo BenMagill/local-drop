@@ -109,9 +109,19 @@ fn main() {
     println!("Requesting to send file...");
     let buf = read_stream(&mut stream);
 
-    // TODO: ensure got askOK or askDeny
+    match Message::parse(buf.to_vec()) {
+        Ok(Message::AskOk) => {
+            println!("Request accepted");
+            Message::send_data(&stream, &buffer);
+        }
+        Ok(Message::AskDeny) => {
+            println!("denied ")
+        }
+        _ => {
+            panic!("not expected")
+        }
+    };
 
-    println!("Request accepted");
     //dbg!(String::from_utf8(buf));
     //let mut buf = [0; 1028];
     //println!("{}", stream.read(&mut buf).unwrap());
