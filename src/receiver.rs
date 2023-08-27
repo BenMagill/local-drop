@@ -2,9 +2,10 @@ use local_drop::{read_stream, Message, MessageType};
 use std::any::Any;
 use std::io::{stdin, Read, Write};
 use std::net::{IpAddr, TcpListener};
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use std::thread;
 use std::time::Duration;
+use std::{fs, thread};
 use zeroconf::prelude::*;
 use zeroconf::{MdnsService, ServiceRegistration, ServiceType, TxtRecord};
 
@@ -78,11 +79,14 @@ fn main() {
                             while file_recv_buf.len() < info.file_size as usize / 8 {
                                 println!("reading more of file");
                                 let buf = read_stream(&stream);
-                                print!("Got {} bytes", buf.len());
+                                println!("Got {} bytes", buf.len());
                                 file_recv_buf.extend_from_slice(&buf);
                             }
 
                             println!("finished reading file");
+
+                            fs::write(Path::new("./data/").join(info.file_name), file_recv_buf)
+                                .unwrap();
                         }
                         _ => panic!("unexpected"),
                     };
