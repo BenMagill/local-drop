@@ -113,6 +113,8 @@ fn main() {
         Ok(Message::AskOk) => {
             println!("Request accepted");
             Message::send_data(&stream, &buffer);
+
+            loop {}
         }
         Ok(Message::AskDeny) => {
             println!("denied ")

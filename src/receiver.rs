@@ -76,7 +76,10 @@ fn main() {
                         Ok(Message::Data) => {
                             while file_recv_buf.len() < info.file_size as usize {
                                 println!("reading more of file");
-                                stream.read(&mut file_recv_buf).unwrap();
+                                let mut buf = vec![];
+                                let b = stream.read(&mut buf).unwrap();
+                                print!("Got {} bytes", b);
+                                file_recv_buf.extend_from_slice(&buf);
                             }
 
                             println!("finished reading file");
