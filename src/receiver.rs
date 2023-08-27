@@ -69,23 +69,24 @@ fn main() {
 
                     let mut file_recv_buf: Vec<u8> = vec![];
 
-                    let mut message: [u8; 1] = [0; 1];
-                    stream.read_exact(&mut message).unwrap();
+                    println!("{}", read_stream(&stream).len());
+                    //let mut message: [u8; 1] = [0; 1];
+                    //stream.read_exact(&mut message).unwrap();
 
-                    match Message::parse(message.to_vec()) {
-                        Ok(Message::Data) => {
-                            while file_recv_buf.len() < info.file_size as usize {
-                                println!("reading more of file");
-                                let mut buf = vec![];
-                                let b = stream.read(&mut buf).unwrap();
-                                print!("Got {} bytes", b);
-                                file_recv_buf.extend_from_slice(&buf);
-                            }
+                    //match Message::parse(message.to_vec()) {
+                    //Ok(Message::Data) => {
+                    //while file_recv_buf.len() < info.file_size as usize {
+                    //println!("reading more of file");
+                    //let mut buf = vec![];
+                    //let b = stream.read(&mut buf).unwrap();
+                    //print!("Got {} bytes", b);
+                    //file_recv_buf.extend_from_slice(&buf);
+                    //}
 
-                            println!("finished reading file");
-                        }
-                        _ => panic!("unexpected"),
-                    };
+                    //println!("finished reading file");
+                    //}
+                    //_ => panic!("unexpected"),
+                    //};
                 } else {
                     stream.write(&Message::build_ask_deny()).unwrap();
                 }
