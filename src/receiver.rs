@@ -1,4 +1,6 @@
+mod peer;
 use local_drop::{read_stream, Message, MessageType};
+use peer::PeerService;
 use std::any::Any;
 use std::io::{stdin, Read, Write};
 use std::net::{IpAddr, TcpListener};
@@ -19,29 +21,11 @@ fn main() {
     let port = "12727";
     let tcp_listener = TcpListener::bind(String::from("0.0.0.0:") + port).unwrap();
 
-    thread::spawn(|| {
-        let mut service = MdnsService::new(
-            ServiceType::new("localdrop", "tcp").unwrap(),
-            port.parse().unwrap(),
-        );
+    PeerService::announce("raspberrrrrrry", port.parse().unwrap());
 
-        let mut txt_record = TxtRecord::new();
-        let context: Arc<Mutex<Context>> = Arc::default();
-
-        txt_record.insert("name", "raspberrrrrrry").unwrap();
-
-        service.set_registered_callback(Box::new(on_service_reg));
-        service.set_context(Box::new(context));
-        service.set_txt_record(txt_record);
-
-        let event_loop = service.register().unwrap();
-        loop {
-            event_loop.poll(Duration::from_secs(5)).unwrap();
-        }
-    });
+    // intentionally not moving stream to thread so that only one request processed at a time
     for stream in tcp_listener.incoming() {
         let mut stream = stream.unwrap();
-        println!("Got connection");
         let buf = read_stream(&mut stream);
 
         // Expect data to be a Ask message
@@ -69,11 +53,8 @@ fn main() {
                     let mut file_recv_buf: Vec<u8> = vec![];
 
                     let buf = read_stream(&stream);
-                    //let mut message: [u8; 1] = [0; 1];
-                    //stream.read_exact(&mut message).unwrap();
 
-                    // TODO: only send first byte of buf instead of cloning
-                    match Message::parse(buf.clone()) {
+                    match Message::parse(vec![*buf.get(0).unwrap()]) {
                         Ok(Message::Data) => {
                             file_recv_buf.extend_from_slice(&buf.as_slice()[1..]);
                             while file_recv_buf.len() < info.file_size as usize / 8 {
@@ -102,27 +83,3 @@ fn main() {
         println!("comms end");
     }
 }
-
-fn on_service_reg(result: zeroconf::Result<ServiceRegistration>, context: Option<Arc<dyn Any>>) {
-    let service = result.unwrap();
-    println!("Registered: {:?}", service);
-
-    let context = context
-        .as_ref()
-        .unwrap()
-        .downcast_ref::<Arc<Mutex<Context>>>()
-        .unwrap()
-        .clone();
-
-    context.lock().unwrap().service_name = service.name().clone();
-
-    println!("Context: {:?}", context);
-}
-//fn main() {
-//// setup some sort of server
-//// listen for hello messages
-//// ask user if want to recieve file from this person
-////      maybe get info about size and name as well?
-//// send ok to the sender with a unique code
-//// recieve data from sender
-//}

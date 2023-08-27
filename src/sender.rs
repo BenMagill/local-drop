@@ -1,5 +1,7 @@
 use crossbeam::atomic::AtomicCell;
+mod peer;
 use local_drop::{read_stream, Message};
+use peer::{Peer, Peers};
 use std::any::Any;
 use std::collections::HashMap;
 use std::io::{stdin, Write};
@@ -12,6 +14,8 @@ use std::{env, fs::File, io::Read, sync::mpsc::channel, thread};
 use zeroconf::prelude::*;
 use zeroconf::{MdnsBrowser, ServiceType};
 
+use crate::peer::PeerService;
+
 fn get_file(buffer: &mut Vec<u8>, file_path: &String) {
     let mut file = match File::open(file_path) {
         Ok(file) => file,
@@ -22,50 +26,9 @@ fn get_file(buffer: &mut Vec<u8>, file_path: &String) {
     file.read_to_end(buffer).unwrap();
 }
 
-type Services = HashMap<String, Service>;
-
-#[derive(Clone, Debug)]
-struct Service {
-    address: String,
-    port: u16,
-    name: String,
-}
-
-fn start_search(services: Arc<Mutex<Services>>, stop: Arc<Mutex<bool>>) -> JoinHandle<()> {
-    thread::spawn(move || {
-        let mut browser = MdnsBrowser::new(ServiceType::new("localdrop", "tcp").unwrap());
-
-        browser.set_service_discovered_callback(Box::new(move |result, _context| {
-            let result = result.unwrap();
-            let name = result.txt().clone().unwrap().get("name").unwrap();
-            //println!("Service discovered: {:?}", result);
-            let addr = result.address().clone();
-            let s = Service {
-                address: addr.clone(),
-                port: result.port().clone(),
-                name,
-            };
-            services.lock().unwrap().insert(addr, s);
-            //sender.send(s).unwrap();
-        }));
-
-        let event_loop = browser.browse_services().unwrap();
-
-        loop {
-            if stop.lock().unwrap().clone() {
-                return;
-            }
-            //println!("Checking");
-            event_loop.poll(Duration::from_secs(1)).unwrap();
-        }
-    })
-}
-
 fn main() {
-    let s: HashMap<String, Service> = HashMap::new();
-    let services = Arc::new(Mutex::new(s));
-    let stop = Arc::new(Mutex::new(false));
-    start_search(services.clone(), stop.clone());
+    let p = PeerService::new();
+    p.start_search();
 
     // provide the filename to send when running for simplicity
     let args: Vec<String> = env::args().collect();
@@ -76,16 +39,15 @@ fn main() {
     let file_size = buffer.len() * 8;
 
     // search for devices running it
-
     println!("Finding devices...");
     thread::sleep(Duration::from_secs(3));
-    *(stop.lock().unwrap()) = true;
-    //search_thread.join().unwrap();
+    p.end_search();
     println!("Please select a device to send to");
 
-    let s = services.lock().unwrap().clone();
+    let s = p.get_peers();
     for (addr, service) in s.iter() {
         let addr: IpAddr = addr.parse().unwrap();
+
         if addr.is_ipv6() {
             continue;
         }
