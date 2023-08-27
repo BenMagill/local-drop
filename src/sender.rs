@@ -1,18 +1,11 @@
-use crossbeam::atomic::AtomicCell;
 mod peer;
 use local_drop::{read_stream, Message};
-use peer::{Peer, Peers};
-use std::any::Any;
-use std::collections::HashMap;
 use std::io::{stdin, Write};
 use std::net::{IpAddr, TcpStream};
 use std::path::Path;
-use std::sync::{Arc, Mutex};
-use std::thread::JoinHandle;
 use std::time::Duration;
-use std::{env, fs::File, io::Read, sync::mpsc::channel, thread};
+use std::{env, fs::File, io::Read, thread};
 use zeroconf::prelude::*;
-use zeroconf::{MdnsBrowser, ServiceType};
 
 use crate::peer::PeerService;
 

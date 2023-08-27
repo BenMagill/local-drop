@@ -1,15 +1,12 @@
 mod peer;
-use local_drop::{read_stream, Message, MessageType};
+use local_drop::{read_stream, Message};
 use peer::PeerService;
-use std::any::Any;
-use std::io::{stdin, Read, Write};
-use std::net::{IpAddr, TcpListener};
-use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
-use std::time::Duration;
-use std::{fs, thread};
+use requestty::{prompt_one, Question};
+use std::fs;
+use std::io::{stdin, Write};
+use std::net::TcpListener;
+use std::path::Path;
 use zeroconf::prelude::*;
-use zeroconf::{MdnsService, ServiceRegistration, ServiceType, TxtRecord};
 
 #[derive(Default, Debug)]
 pub struct Context {
@@ -31,21 +28,14 @@ fn main() {
         // Expect data to be a Ask message
         match Message::parse(buf) {
             Ok(Message::Ask(info)) => {
-                println!(
-                    "
-                    Someone would like to send a file\n
-                    File name: {}\n
-                    Size: {}\n
-                    Accept? (enter yes)
-                    ",
-                    info.file_name, info.file_size
-                );
+                let accept = prompt_one(Question::confirm("receive")
+                    .message(
+                        format!("Someone would like to send a file \nFile name: {} \nSize: {} \nAccept?",
+                            info.file_name, info.file_size)
+                    )
+                    .build());
 
-                let mut confirm = String::new();
-                stdin().read_line(&mut confirm).unwrap();
-                confirm = confirm.trim_end().to_uppercase().to_string();
-
-                if String::from("YES") == confirm {
+                if accept.unwrap().as_bool().unwrap() {
                     println!("accepted,");
 
                     stream.write(&Message::build_ask_ok()).unwrap();

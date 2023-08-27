@@ -9,7 +9,6 @@ pub enum MessageType {
     AskDeny = 0b000_0011,
     Data = 0b0000_0100,
     DataRecvd = 0b0000_0101,
-    //DataEnd = 0b0000_0100,
 }
 
 impl MessageType {

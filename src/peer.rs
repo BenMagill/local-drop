@@ -1,12 +1,11 @@
 use std::{
-    any::Any,
     collections::HashMap,
     sync::{Arc, Mutex},
     thread::{self, JoinHandle},
     time::Duration,
 };
 
-use zeroconf::{prelude::*, MdnsBrowser, MdnsService, ServiceRegistration, ServiceType, TxtRecord};
+use zeroconf::{prelude::*, MdnsBrowser, MdnsService, ServiceType, TxtRecord};
 
 #[derive(Default, Debug)]
 pub struct Context {
