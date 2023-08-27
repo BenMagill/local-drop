@@ -87,6 +87,8 @@ fn main() {
 
                             fs::write(Path::new("./data/").join(info.file_name), file_recv_buf)
                                 .unwrap();
+
+                            stream.write(&Message::build_data_received()).unwrap();
                         }
                         _ => panic!("unexpected"),
                     };
@@ -96,6 +98,8 @@ fn main() {
             }
             _ => println!("Error, expected Ask msg"),
         };
+
+        println!("comms end");
     }
 }
 

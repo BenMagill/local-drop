@@ -8,6 +8,7 @@ pub enum MessageType {
     AskOk = 0b0000_0010,
     AskDeny = 0b000_0011,
     Data = 0b0000_0100,
+    DataRecvd = 0b0000_0101,
     //DataEnd = 0b0000_0100,
 }
 
@@ -28,7 +29,7 @@ pub enum Message {
     AskOk,
     AskDeny,
     Data,
-    //DataEnd,
+    DataRecvd,
 }
 
 impl Message {
@@ -45,7 +46,7 @@ impl Message {
             2 => Ok(Message::AskOk),
             3 => Ok(Message::AskDeny),
             4 => Ok(Message::Data),
-            //4 => Ok(Message::DataEnd),
+            5 => Ok(Message::DataRecvd),
             _ => Err(()),
         }
     }
@@ -107,6 +108,12 @@ impl Message {
         stream.write(&[MessageType::Data.to_u8()]).unwrap();
         println!("{}", data.len());
         stream.write(data).unwrap();
+    }
+
+    pub fn build_data_received() -> Vec<u8> {
+        let bytes: Vec<u8> = vec![MessageType::DataRecvd.to_u8()];
+
+        bytes
     }
 }
 

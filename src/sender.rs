@@ -114,7 +114,13 @@ fn main() {
             println!("Request accepted");
             Message::send_data(&stream, &buffer);
 
-            loop {}
+            let buf = read_stream(&stream);
+            match Message::parse(buf) {
+                Ok(Message::DataRecvd) => {
+                    println!("File was received ok")
+                }
+                _ => panic!("unexpected"),
+            }
         }
         Ok(Message::AskDeny) => {
             println!("denied ")
@@ -124,16 +130,5 @@ fn main() {
         }
     };
 
-    //dbg!(String::from_utf8(buf));
-    //let mut buf = [0; 1028];
-    //println!("{}", stream.read(&mut buf).unwrap());
-    //dbg!(String::from_utf8(buf.to_vec()));
-
-    //loop {
-    //dbg!(services.lock().unwrap().clone());
-    //}
-
-    // check if can do it
-    // wait for response
-    // send data
+    println!("fin");
 }
