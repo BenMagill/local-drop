@@ -105,6 +105,7 @@ impl Message {
 
     pub fn send_data(mut stream: &TcpStream, data: &Vec<u8>) {
         stream.write(&[MessageType::Data.to_u8()]).unwrap();
+        println!("{}", data.len());
         stream.write(data).unwrap();
     }
 }
