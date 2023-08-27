@@ -67,17 +67,18 @@ fn main() {
 
                     let mut file_recv_buf: Vec<u8> = vec![];
 
-                    //println!("{}", read_stream(&stream).len());
-                    let mut message: [u8; 1] = [0; 1];
-                    stream.read_exact(&mut message).unwrap();
+                    let buf = read_stream(&stream);
+                    //let mut message: [u8; 1] = [0; 1];
+                    //stream.read_exact(&mut message).unwrap();
 
-                    match Message::parse(message.to_vec()) {
+                    // TODO: only send first byte of buf instead of cloning
+                    match Message::parse(buf.clone()) {
                         Ok(Message::Data) => {
+                            file_recv_buf.extend_from_slice(&buf.as_slice()[1..]);
                             while file_recv_buf.len() < info.file_size as usize / 8 {
                                 println!("reading more of file");
-                                let mut buf = vec![];
-                                let b = stream.read(&mut buf).unwrap();
-                                print!("Got {} bytes", b);
+                                let buf = read_stream(&stream);
+                                print!("Got {} bytes", buf.len());
                                 file_recv_buf.extend_from_slice(&buf);
                             }
 
