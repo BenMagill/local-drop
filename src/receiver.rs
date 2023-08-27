@@ -28,15 +28,14 @@ fn main() {
         // Expect data to be a Ask message
         match Message::parse(buf) {
             Ok(Message::Ask(info)) => {
-                let accept = prompt_one(Question::confirm("receive")
-                    .message(
-                        format!("Someone would like to send a file \nFile name: {} \nSize: {} \nAccept?",
-                            info.file_name, info.file_size)
-                    )
-                    .build());
+                println!(
+                    "Someone would like to send a file \nFile name: {} \nSize: {}",
+                    info.file_name, info.file_size
+                );
+                let accept = prompt_one(Question::confirm("receive").message("Accept?").build());
 
                 if accept.unwrap().as_bool().unwrap() {
-                    println!("accepted,");
+                    println!("Receiving file");
 
                     stream.write(&Message::build_ask_ok()).unwrap();
 
