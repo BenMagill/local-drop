@@ -1,3 +1,4 @@
+mod comms;
 mod message;
 mod peer;
 use clap::Parser;

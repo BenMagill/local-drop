@@ -1,10 +1,9 @@
-pub mod comms;
 use std::{
     io::{Read, Write},
     net::TcpStream,
 };
 
-use comms::{Deserialiser, Serialiser};
+use crate::comms::{Deserialiser, Serialiser};
 
 #[derive(Clone)]
 pub enum MessageType {

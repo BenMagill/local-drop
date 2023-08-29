@@ -1,6 +1,6 @@
 use std::{io::Read, net::TcpStream};
 
-use crate::MessageType;
+use crate::message::MessageType;
 
 /**
 * Encode and decode communications received
