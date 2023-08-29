@@ -1,14 +1,14 @@
+mod message;
 mod peer;
-use local_drop::{Message, Stream};
+use clap::Parser;
+use message::{Message, Stream};
 use requestty::Question;
-use std::io::{stdin, Write};
 use std::net::{IpAddr, TcpStream};
 use std::path::Path;
 use std::time::Duration;
 use std::{env, fs::File, io::Read, thread};
-use zeroconf::prelude::*;
 
-use crate::peer::{Peer, PeerService};
+use crate::peer::PeerService;
 
 fn get_file(buffer: &mut Vec<u8>, file_path: &String) {
     let mut file = match File::open(file_path) {
@@ -20,13 +20,22 @@ fn get_file(buffer: &mut Vec<u8>, file_path: &String) {
     file.read_to_end(buffer).unwrap();
 }
 
+#[derive(Parser, Debug)]
+struct Args {
+    // File to send
+    #[arg(short, long)]
+    file: String,
+}
+
 fn main() {
+    let args = Args::parse();
+
     let p = PeerService::new();
     p.start_search();
 
     // provide the filename to send when running for simplicity
-    let args: Vec<String> = env::args().collect();
-    let file_path = &args[1];
+    //let args: Vec<String> = env::args().collect();
+    let file_path = &args.file;
     let mut buffer: Vec<u8> = Vec::new();
     get_file(&mut buffer, file_path);
     let file_name = Path::new(file_path).file_name().unwrap();
@@ -65,24 +74,17 @@ fn main() {
     let index = choice.unwrap().as_list_item().unwrap().index;
     let addr = service_addr.get(index).unwrap().clone();
 
-    // select the device to send to
-    //let mut addr = String::new();
-    //stdin().read_line(&mut addr).unwrap();
-    //addr = addr.trim_end().to_string();
-
     let service = s.get(&addr).unwrap();
     let listener = addr + ":" + service.port.to_string().as_str();
 
-    let mut stream = TcpStream::connect(listener).unwrap();
+    let stream = TcpStream::connect(listener).unwrap();
     let mut s = Stream::new(stream);
 
     let ask_msg = Message::build_ask(file_name.to_str().unwrap(), file_size as u32);
-    //dbg!(&ask_msg[0..20]);
     s.write(ask_msg);
 
     println!("Requesting to send file...");
     let buf = s.read();
-    //let buf = read_stream(&mut stream);
 
     match Message::parse(buf) {
         Ok(Message::AskOk) => {

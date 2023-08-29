@@ -135,13 +135,6 @@ impl Message {
     }
 }
 
-fn read_stream(mut stream: &TcpStream) -> Vec<u8> {
-    let mut buf = [0; 1028];
-    let length = stream.read(&mut buf).unwrap();
-
-    buf[0..length].to_vec()
-}
-
 /**
 * Attempt to read x bytes
 * If less recieved then just returns what was recieved

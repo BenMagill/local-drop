@@ -1,14 +1,27 @@
+mod message;
 mod peer;
+use clap::Parser;
 use indicatif::ProgressBar;
-use local_drop::comms::Deserialiser;
-use local_drop::{Message, Stream};
+use message::{Message, Stream};
 use peer::PeerService;
 use requestty::{prompt_one, Question};
 use std::fs;
-use std::io::{stdin, Write};
 use std::net::TcpListener;
 use std::path::Path;
-use zeroconf::prelude::*;
+
+#[derive(Parser, Debug)]
+struct Args {
+    // Name to show to people wanting to send
+    #[arg(short, long, default_value_t = String::from("local_drop"))]
+    name: String,
+
+    // Port to run on
+    #[arg(short, long, default_value_t = 12727)]
+    port: u16,
+
+    #[arg(short, long, default_value_t = String::from("./data/"))]
+    data_dir: String,
+}
 
 #[derive(Default, Debug)]
 pub struct Context {
@@ -16,19 +29,20 @@ pub struct Context {
 }
 
 fn main() {
-    // Create a service
-    let port = "12727";
-    let tcp_listener = TcpListener::bind(String::from("0.0.0.0:") + port).unwrap();
+    let args = Args::parse();
 
-    PeerService::announce("raspberrrrrrry", port.parse().unwrap());
+    // Create a service
+    let port = args.port;
+    let tcp_listener = TcpListener::bind(String::from("0.0.0.0:") + &port.to_string()).unwrap();
+
+    PeerService::announce(&args.name, port);
 
     // intentionally not moving stream to thread so that only one request processed at a time
     for stream in tcp_listener.incoming() {
-        let mut stream = stream.unwrap();
+        let stream = stream.unwrap();
         let mut s = Stream::new(stream);
 
         let buf = s.read();
-        //let buf = read_stream(&mut stream);
 
         // Expect data to be a Ask message
         match Message::parse(buf) {
@@ -58,22 +72,14 @@ fn main() {
                             let pb = ProgressBar::new(length_left as u64);
                             let file_recv_buf = s.read_amount_closure(length_left, |bytes_done| {
                                 pb.set_position(bytes_done as u64);
-                                //file_recv_buf.extend_from_slice(&bytes);
                             });
 
                             // TODO: check for missmatch between file_recv_buf and info.file_size
 
-                            //while file_recv_buf.len() < info.file_size as usize / 8 {
-                            ////println!("reading more of file");
-                            //let buf = read_stream(&stream);
-                            ////println!("Got {} bytes", buf.len());
-
-                            //}
-
                             pb.finish_and_clear();
 
                             // TODO: make this path customisable
-                            let path = Path::new("./data/").join(info.file_name);
+                            let path = Path::new(&args.data_dir).join(info.file_name);
                             fs::write(&path, file_recv_buf).unwrap();
 
                             println!("File has been saved to {}", path.to_str().unwrap());
