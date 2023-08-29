@@ -1,6 +1,7 @@
 mod peer;
 use indicatif::ProgressBar;
-use local_drop::{read_stream, Message};
+use local_drop::comms::Deserialiser;
+use local_drop::{Message, Stream};
 use peer::PeerService;
 use requestty::{prompt_one, Question};
 use std::fs;
@@ -24,7 +25,10 @@ fn main() {
     // intentionally not moving stream to thread so that only one request processed at a time
     for stream in tcp_listener.incoming() {
         let mut stream = stream.unwrap();
-        let buf = read_stream(&mut stream);
+        let mut s = Stream::new(stream);
+
+        let buf = s.read();
+        //let buf = read_stream(&mut stream);
 
         // Expect data to be a Ask message
         match Message::parse(buf) {
@@ -43,25 +47,28 @@ fn main() {
                 if accept.unwrap().as_bool().unwrap() {
                     println!("Receiving file");
 
-                    stream.write(&Message::build_ask_ok()).unwrap();
+                    s.write(Message::build_ask_ok());
 
-                    let mut file_recv_buf: Vec<u8> = vec![];
+                    // SHould read the 4 length bytes then the first byte
+                    let (length_left, byte) = s.read_first_byte();
 
-                    let buf = read_stream(&stream);
-
-                    match Message::parse(vec![*buf.get(0).unwrap()]) {
+                    match Message::parse(vec![byte]) {
                         Ok(Message::Data) => {
-                            file_recv_buf.extend_from_slice(&buf.as_slice()[1..]);
-                            let pb = ProgressBar::new(info.file_size as u64 / 8);
+                            // TODO: this is messy
+                            let pb = ProgressBar::new(length_left as u64);
+                            let file_recv_buf = s.read_amount_closure(length_left, |n_bytes| {
+                                pb.set_position(n_bytes as u64);
+                                //file_recv_buf.extend_from_slice(&bytes);
+                            });
 
-                            while file_recv_buf.len() < info.file_size as usize / 8 {
-                                pb.set_position(file_recv_buf.len() as u64);
-                                //println!("reading more of file");
-                                let buf = read_stream(&stream);
-                                //println!("Got {} bytes", buf.len());
+                            // TODO: check for missmatch between file_recv_buf and info.file_size
 
-                                file_recv_buf.extend_from_slice(&buf);
-                            }
+                            //while file_recv_buf.len() < info.file_size as usize / 8 {
+                            ////println!("reading more of file");
+                            //let buf = read_stream(&stream);
+                            ////println!("Got {} bytes", buf.len());
+
+                            //}
 
                             pb.finish_and_clear();
 
@@ -71,12 +78,12 @@ fn main() {
 
                             println!("File has been saved to {}", path.to_str().unwrap());
 
-                            stream.write(&Message::build_data_received()).unwrap();
+                            s.write(Message::build_data_received());
                         }
                         _ => panic!("unexpected"),
                     };
                 } else {
-                    stream.write(&Message::build_ask_deny()).unwrap();
+                    s.write(Message::build_ask_deny());
                 }
             }
             _ => println!("Error, expected Ask msg"),

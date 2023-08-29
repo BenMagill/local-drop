@@ -73,36 +73,14 @@ impl Serialiser {
 
 pub struct Deserialiser {
     buf: Vec<u8>,
-    //stream: Box<TcpStream>,
 }
 
 impl Deserialiser {
-    //pub fn new(stream: TcpStream) -> Deserialiser {
-    //Deserialiser {
-    //buf: vec![],
-    //stream: Box::new(stream),
-    //}
-    //}
     pub fn from_vec(buf: Vec<u8>) -> Deserialiser {
-        Deserialiser {
-            buf: buf.clone(),
-            //stream: Box::new(stream),
-        }
+        Deserialiser { buf: buf.clone() }
     }
-    //fn read_more(&mut self) {
-    //let mut buf = [0; 1028];
-    //let length = self.stream.read(&mut buf).unwrap();
-
-    //let v = buf[0..length].to_vec();
-    //self.buf.extend(v);
-    //}
 
     fn read_bytes(&mut self, amount: usize) -> Vec<u8> {
-        if self.buf.len() > amount {
-            panic!("needed more bytes");
-            //self.read_more();
-        }
-
         // TODO: i think this is inefficient
         let bytes = self.buf[0..amount].to_vec();
         self.buf = self.buf[amount..].to_vec();
@@ -110,16 +88,27 @@ impl Deserialiser {
         bytes
     }
 
-    pub fn get_u32(&mut self) -> u32 {
+    pub fn read_u32(&mut self) -> u32 {
         let bytes = self.read_bytes(4);
         u32::from_be_bytes(bytes[0..4].try_into().unwrap())
     }
 
-    pub fn get_string(&mut self) -> String {
-        let s_length = usize::from(*self.read_bytes(1).get(0).unwrap());
+    pub fn read_u8(&mut self) -> u8 {
+        let bytes = self.read_bytes(1);
+        u8::from_be_bytes(bytes.try_into().unwrap())
+    }
 
-        let string_b = self.read_bytes(s_length);
+    pub fn read_string(&mut self) -> String {
+        let string_b = self.read_vec();
 
         String::from_utf8(string_b.try_into().unwrap()).unwrap()
+    }
+
+    pub fn read_vec(&mut self) -> Vec<u8> {
+        let s_length = usize::from(*self.read_bytes(1).get(0).unwrap());
+
+        let bytes = self.read_bytes(s_length);
+
+        bytes
     }
 }
