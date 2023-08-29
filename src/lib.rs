@@ -190,7 +190,7 @@ impl Stream {
         while buf.len() < amount as usize {
             let bytes = read_bytes(&self.stream, amount as usize - buf.len());
             buf.extend_from_slice(&bytes);
-            clsr(bytes.len());
+            clsr(buf.len());
         }
         buf
     }

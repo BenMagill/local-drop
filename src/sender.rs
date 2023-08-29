@@ -1,5 +1,5 @@
 mod peer;
-use local_drop::{read_stream, Message, Stream};
+use local_drop::{Message, Stream};
 use requestty::Question;
 use std::io::{stdin, Write};
 use std::net::{IpAddr, TcpStream};
@@ -74,7 +74,7 @@ fn main() {
     let listener = addr + ":" + service.port.to_string().as_str();
 
     let mut stream = TcpStream::connect(listener).unwrap();
-    let s = Stream::new(stream);
+    let mut s = Stream::new(stream);
 
     let ask_msg = Message::build_ask(file_name.to_str().unwrap(), file_size as u32);
     //dbg!(&ask_msg[0..20]);

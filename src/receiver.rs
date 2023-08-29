@@ -56,8 +56,8 @@ fn main() {
                         Ok(Message::Data) => {
                             // TODO: this is messy
                             let pb = ProgressBar::new(length_left as u64);
-                            let file_recv_buf = s.read_amount_closure(length_left, |n_bytes| {
-                                pb.set_position(n_bytes as u64);
+                            let file_recv_buf = s.read_amount_closure(length_left, |bytes_done| {
+                                pb.set_position(bytes_done as u64);
                                 //file_recv_buf.extend_from_slice(&bytes);
                             });
 
