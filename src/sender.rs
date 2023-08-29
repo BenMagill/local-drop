@@ -1,5 +1,5 @@
 mod peer;
-use local_drop::{read_stream, Message};
+use local_drop::{Message, Stream};
 use requestty::Question;
 use std::io::{stdin, Write};
 use std::net::{IpAddr, TcpStream};
@@ -74,20 +74,23 @@ fn main() {
     let listener = addr + ":" + service.port.to_string().as_str();
 
     let mut stream = TcpStream::connect(listener).unwrap();
+    let mut s = Stream::new(stream);
 
     let ask_msg = Message::build_ask(file_name.to_str().unwrap(), file_size as u32);
     //dbg!(&ask_msg[0..20]);
-    stream.write(&ask_msg).unwrap();
+    s.write(ask_msg);
 
     println!("Requesting to send file...");
-    let buf = read_stream(&mut stream);
+    let buf = s.read();
+    //let buf = read_stream(&mut stream);
 
-    match Message::parse(buf.to_vec()) {
+    match Message::parse(buf) {
         Ok(Message::AskOk) => {
             println!("Request accepted");
-            Message::send_data(&stream, &buffer);
+            let buf = Message::build_data(&buffer);
+            s.write(buf);
 
-            let buf = read_stream(&stream);
+            let buf = s.read();
             match Message::parse(buf) {
                 Ok(Message::DataRecvd) => {
                     println!("File was received ok")
