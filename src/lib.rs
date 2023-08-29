@@ -1,8 +1,12 @@
+mod comms;
 use std::{
     io::{Read, Write},
     net::TcpStream,
 };
 
+use comms::{Deserialiser, Serialiser};
+
+#[derive(Clone)]
 pub enum MessageType {
     Ask = 0b0000_0001,
     AskOk = 0b0000_0010,
@@ -40,6 +44,7 @@ impl Message {
         match message.get(0).unwrap() {
             1 => {
                 let ask = Message::parse_ask(message);
+                dbg!(&ask);
                 Ok(Message::Ask(ask))
             }
             2 => Ok(Message::AskOk),
@@ -56,25 +61,31 @@ impl Message {
      * bytes 6 is for the length of the file_name (up to 254 chars)
      */
     pub fn build_ask(file_name: &str, file_size: u32) -> Vec<u8> {
-        let mut bytes = vec![0; 6];
-        bytes[0] = MessageType::Ask.to_u8();
+        let mut s = Serialiser::new();
 
-        let fs_bytes = file_size.to_be_bytes();
-        bytes[1] = fs_bytes[0];
-        bytes[2] = fs_bytes[1];
-        bytes[3] = fs_bytes[2];
-        bytes[4] = fs_bytes[3];
+        s.add(MessageType::Ask);
+        s.add(file_size);
+        s.add(file_name);
 
-        // Only use the first 255 bytes for the file name
-        let mut fn_bytes = file_name.as_bytes();
-        if fn_bytes.len() > 255 {
-            fn_bytes = &fn_bytes[0..255];
-        }
-        bytes[5] = fn_bytes.len() as u8;
+        //let mut bytes = vec![0; 6];
+        //bytes[0] = MessageType::Ask.to_u8();
 
-        bytes.extend_from_slice(fn_bytes);
+        //let fs_bytes = file_size.to_be_bytes();
+        //bytes[1] = fs_bytes[0];
+        //bytes[2] = fs_bytes[1];
+        //bytes[3] = fs_bytes[2];
+        //bytes[4] = fs_bytes[3];
 
-        bytes
+        //// Only use the first 255 bytes for the file name
+        //let mut fn_bytes = file_name.as_bytes();
+        //if fn_bytes.len() > 255 {
+        //fn_bytes = &fn_bytes[0..255];
+        //}
+        //bytes[5] = fn_bytes.len() as u8;
+
+        //bytes.extend_from_slice(fn_bytes);
+
+        s.output()
     }
 
     fn parse_ask(message: Vec<u8>) -> AskInfo {
@@ -82,13 +93,21 @@ impl Message {
         // 5 = file name len
         // ... = file name
 
-        let b = message.as_slice();
-        let s_length = usize::from(*message.get(5).unwrap());
+        let mut d = Deserialiser::from_vec(message);
+        let file_size = d.get_u32();
+        let file_name = d.get_string();
 
         AskInfo {
-            file_size: u32::from_be_bytes(b[1..5].try_into().unwrap()),
-            file_name: String::from_utf8(b[6..6 + s_length].try_into().unwrap()).unwrap(),
+            file_size,
+            file_name,
         }
+        //let b = message.as_slice();
+        //let s_length = usize::from(*message.get(5).unwrap());
+
+        //AskInfo {
+        //file_size: u32::from_be_bytes(b[1..5].try_into().unwrap()),
+        //file_name: String::from_utf8(b[6..6 + s_length].try_into().unwrap()).unwrap(),
+        //}
     }
 
     pub fn build_ask_ok() -> Vec<u8> {
