@@ -36,7 +36,7 @@ fn main() {
     let port = args.port;
     let tcp_listener = TcpListener::bind(String::from("0.0.0.0:") + &port.to_string()).unwrap();
 
-    PeerService::announce(&args.name, port);
+    PeerService::announce(args.name, port);
 
     // intentionally not moving stream to thread so that only one request processed at a time
     for stream in tcp_listener.incoming() {

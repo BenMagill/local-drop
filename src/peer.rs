@@ -75,14 +75,14 @@ impl PeerService {
         *(self.stop.lock().unwrap()) = true;
     }
 
-    pub fn announce(name: &'static str, port: u16) -> JoinHandle<()> {
+    pub fn announce(name: String, port: u16) -> JoinHandle<()> {
         thread::spawn(move || {
             let mut service = MdnsService::new(PeerService::get_service(), port);
 
             let mut txt_record = TxtRecord::new();
             let context: Arc<Mutex<Context>> = Arc::default();
 
-            txt_record.insert("name", name).unwrap();
+            txt_record.insert("name", &name).unwrap();
 
             service.set_registered_callback(Box::new(|result, context| {
                 let service = result.unwrap();
