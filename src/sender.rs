@@ -96,7 +96,7 @@ fn main() {
             let buf = s.read();
             match Message::parse(buf) {
                 Ok(Message::DataRecvd) => {
-                    println!("File was received ok")
+                    println!("File was received")
                 }
                 _ => panic!("unexpected"),
             }
@@ -109,5 +109,5 @@ fn main() {
         }
     };
 
-    println!("fin");
+    println!("Finished");
 }

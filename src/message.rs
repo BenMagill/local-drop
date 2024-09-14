@@ -37,9 +37,6 @@ pub enum Message {
 impl Message {
     pub fn parse(v: Vec<u8>) -> Result<Message, ()> {
         let mut d = Deserialiser::from_vec(v);
-        //if message.len() == 0 {
-        //return Err(());
-        //}
 
         match d.read_u8() {
             1 => {
@@ -67,32 +64,10 @@ impl Message {
         s.add(file_size);
         s.add(file_name);
 
-        //let mut bytes = vec![0; 6];
-        //bytes[0] = MessageType::Ask.to_u8();
-
-        //let fs_bytes = file_size.to_be_bytes();
-        //bytes[1] = fs_bytes[0];
-        //bytes[2] = fs_bytes[1];
-        //bytes[3] = fs_bytes[2];
-        //bytes[4] = fs_bytes[3];
-
-        //// Only use the first 255 bytes for the file name
-        //let mut fn_bytes = file_name.as_bytes();
-        //if fn_bytes.len() > 255 {
-        //fn_bytes = &fn_bytes[0..255];
-        //}
-        //bytes[5] = fn_bytes.len() as u8;
-
-        //bytes.extend_from_slice(fn_bytes);
-
         s.output()
     }
 
     fn parse_ask(mut d: Deserialiser) -> AskInfo {
-        // 1-4 = file size
-        // 5 = file name len
-        // ... = file name
-
         let file_size = d.read_u32();
         let file_name = d.read_string();
 
@@ -100,13 +75,6 @@ impl Message {
             file_size,
             file_name,
         }
-        //let b = message.as_slice();
-        //let s_length = usize::from(*message.get(5).unwrap());
-
-        //AskInfo {
-        //file_size: u32::from_be_bytes(b[1..5].try_into().unwrap()),
-        //file_name: String::from_utf8(b[6..6 + s_length].try_into().unwrap()).unwrap(),
-        //}
     }
 
     pub fn build_ask_ok() -> Vec<u8> {
